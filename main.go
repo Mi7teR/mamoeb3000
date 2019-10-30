@@ -19,7 +19,7 @@ type Curses []string
 var data []byte
 var templates Templates
 var cursesSize int
-var gaKey string
+var gaKey, hostName, locationUrl string
 
 func init() {
 	fileData, err := ioutil.ReadFile("templates.json")
@@ -33,7 +33,7 @@ func init() {
 	cursesSize = len(templates.Curses)
 }
 
-func sendGaEvent(clientID, chatTitle, messageSource, messageType string) {
+func sendGaEvent(clientID, messageSource, messageType string) {
 	if len(gaKey) == 0 {
 		return
 	}
@@ -41,8 +41,9 @@ func sendGaEvent(clientID, chatTitle, messageSource, messageType string) {
 	if err != nil {
 		log.Println(err)
 	}
+	client.DocumentHostName(hostName)
+	client.DocumentLocationURL(locationUrl)
 	client.UserID(clientID)
-	client.CampaignName(chatTitle)
 	err = client.Send(ga.NewEvent(messageSource, messageType))
 	if err != nil {
 		log.Println(err)
@@ -53,6 +54,8 @@ func sendGaEvent(clientID, chatTitle, messageSource, messageType string) {
 func main() {
 	var token string
 	flag.StringVar(&token, "token", "empty", "telegram bot token")
+	flag.StringVar(&hostName, "hostName", "bot.mi7ter.xyz", "ga hostname")
+	flag.StringVar(&locationUrl, "locationUrl", "https://bot.mi7ter.xyz", "ga location url")
 	flag.StringVar(&gaKey, "gaKey", "", "google analytics key")
 	flag.Parse()
 	if token == "empty" {
@@ -74,11 +77,9 @@ func main() {
 			message := tgbotapi.NewMessage(update.Message.Chat.ID, messageText)
 			_, err = bot.Send(message)
 			if err != nil {
-				sendGaEvent(string(update.Message.From.ID),
-					update.Message.Chat.Title, "direct", "error")
+				sendGaEvent(string(update.Message.From.ID), "direct", "error")
 			} else {
-				sendGaEvent(string(update.Message.From.ID),
-					update.Message.Chat.Title, "direct", "curse")
+				sendGaEvent(string(update.Message.From.ID), "direct", "curse")
 			}
 			continue
 		}
@@ -101,11 +102,9 @@ func main() {
 		}
 
 		if _, err := bot.AnswerInlineQuery(inlineConf); err != nil {
-			sendGaEvent(string(update.Message.From.ID),
-				update.Message.Chat.Title, "inline", "error")
+			sendGaEvent(string(update.InlineQuery.From.ID), "inline", "error")
 		} else {
-			sendGaEvent(string(update.Message.From.ID),
-				update.Message.Chat.Title, "inline", "curse")
+			sendGaEvent(string(update.InlineQuery.From.ID), "inline", "curse")
 		}
 	}
 }
