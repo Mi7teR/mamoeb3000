@@ -3,10 +3,12 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"gopkg.in/telegram-bot-api.v4"
 	"io/ioutil"
 	"log"
 	"math/rand"
+
+	ga "github.com/jpillora/go-ogle-analytics"
+	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
 type Templates struct {
@@ -17,6 +19,7 @@ type Curses []string
 var data []byte
 var templates Templates
 var cursesSize int
+var gaKey string
 
 func init() {
 	fileData, err := ioutil.ReadFile("templates.json")
@@ -30,13 +33,31 @@ func init() {
 	cursesSize = len(templates.Curses)
 }
 
+func sendGaEvent(clientID, chatTitle, messageSource, messageType string) {
+	if len(gaKey) == 0 {
+		return
+	}
+	client, err := ga.NewClient(gaKey)
+	if err != nil {
+		log.Println(err)
+	}
+	client.UserID(clientID)
+	client.CampaignName(chatTitle)
+	err = client.Send(ga.NewEvent(messageSource, messageType))
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func main() {
 	var token string
 	flag.StringVar(&token, "token", "empty", "telegram bot token")
+	flag.StringVar(&gaKey, "gaKey", "", "google analytics key")
 	flag.Parse()
 	if token == "empty" {
 		panic(getRandomCurse())
 	}
+
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Panic(err)
@@ -50,7 +71,14 @@ func main() {
 			var messageText string
 			messageText = getRandomCurse()
 			message := tgbotapi.NewMessage(update.Message.Chat.ID, messageText)
-			bot.Send(message)
+			_, err = bot.Send(message)
+			if err != nil {
+				go sendGaEvent(string(update.Message.From.ID),
+					update.Message.Chat.Title, "direct", "error")
+			} else {
+				go sendGaEvent(string(update.Message.From.ID),
+					update.Message.Chat.Title, "direct", "curse")
+			}
 			continue
 		}
 
@@ -72,7 +100,11 @@ func main() {
 		}
 
 		if _, err := bot.AnswerInlineQuery(inlineConf); err != nil {
-			log.Println(err)
+			go sendGaEvent(string(update.Message.From.ID),
+				update.Message.Chat.Title, "inline", "error")
+		} else {
+			go sendGaEvent(string(update.Message.From.ID),
+				update.Message.Chat.Title, "inline", "curse")
 		}
 	}
 }
