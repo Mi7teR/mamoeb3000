@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -42,9 +43,9 @@ func sendGaEvent(clientID, messageSource, messageType string) {
 		log.Println(err)
 	}
 	client.DocumentHostName(hostName)
-	client.DocumentLocationURL(locationUrl)
+	client.DocumentLocationURL(fmt.Sprintf("%s/%s/%s", locationUrl, messageSource, messageType))
 	client.UserID(clientID)
-	err = client.Send(ga.NewEvent(messageSource, messageType))
+	err = client.Send(ga.NewPageview())
 	if err != nil {
 		log.Println(err)
 	}
