@@ -47,6 +47,7 @@ func sendGaEvent(clientID, chatTitle, messageSource, messageType string) {
 	if err != nil {
 		log.Println(err)
 	}
+	return
 }
 
 func main() {
@@ -73,10 +74,10 @@ func main() {
 			message := tgbotapi.NewMessage(update.Message.Chat.ID, messageText)
 			_, err = bot.Send(message)
 			if err != nil {
-				go sendGaEvent(string(update.Message.From.ID),
+				sendGaEvent(string(update.Message.From.ID),
 					update.Message.Chat.Title, "direct", "error")
 			} else {
-				go sendGaEvent(string(update.Message.From.ID),
+				sendGaEvent(string(update.Message.From.ID),
 					update.Message.Chat.Title, "direct", "curse")
 			}
 			continue
@@ -100,10 +101,10 @@ func main() {
 		}
 
 		if _, err := bot.AnswerInlineQuery(inlineConf); err != nil {
-			go sendGaEvent(string(update.Message.From.ID),
+			sendGaEvent(string(update.Message.From.ID),
 				update.Message.Chat.Title, "inline", "error")
 		} else {
-			go sendGaEvent(string(update.Message.From.ID),
+			sendGaEvent(string(update.Message.From.ID),
 				update.Message.Chat.Title, "inline", "curse")
 		}
 	}
