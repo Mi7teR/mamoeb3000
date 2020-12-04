@@ -23,11 +23,10 @@ var cursesSize int
 var gaKey, hostName, locationUrl string
 
 func init() {
-	fileData, err := ioutil.ReadFile("templates.json")
+	data, err := ioutil.ReadFile("templates.json")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	data = fileData
 	if err := json.Unmarshal(data, &templates); err != nil {
 		panic(err)
 	}
